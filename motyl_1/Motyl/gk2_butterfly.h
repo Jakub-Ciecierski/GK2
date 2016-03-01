@@ -76,6 +76,7 @@ namespace gk2
 		//Camera helper
 		Camera m_camera;
 
+
 		//Shaders
 		std::shared_ptr<ID3D11VertexShader> m_vertexShader;
 		std::shared_ptr<ID3D11PixelShader> m_pixelShader;

@@ -211,7 +211,6 @@ void Butterfly::InitializeDodecahedron()
 	// Bottom
 	m_dodecahedronMtx[currentFaceIndex] = XMMatrixRotationX(XM_PI/2) * XMMatrixTranslation(0, -(DODECAHEDRON_H/2.0f), 0);
 	currentFaceIndex++;
-
 	// Bottom Base - First Left Face
 	m_dodecahedronMtx[currentFaceIndex] = XMMatrixRotationX(-(XM_PI/2)) * XMMatrixTranslation(DODECAHEDRON_R, 0, 0)
 		* XMMatrixRotationZ(DODECAHEDRON_A) * XMMatrixTranslation(-DODECAHEDRON_R, -(DODECAHEDRON_H/2), 0);
@@ -230,6 +229,7 @@ void Butterfly::InitializeDodecahedron()
 		m_dodecahedronMtx[currentFaceIndex] = m_dodecahedronMtx[currentFaceIndex - 6] * XMMatrixRotationZ(XM_PI);
 		currentFaceIndex++;
 	}
+
 }
 
 XMFLOAT3 Butterfly::MoebiusStripPos(float t, float s)
@@ -274,43 +274,28 @@ XMVECTOR Butterfly::MoebiusStripDs(float t, float s)
 void Butterfly::InitializeMoebiusStrip()
 //Create vertex and index buffers for the Moebius strip
 {
-	VertexPosNormal vertices[4 * MOEBIUS_N];
-	float t = 0
-	float dt = XM_2PI / MOEBIUS_N;
-	for (int i = 0; i < 2 * MOEBIUS_N; ++i)
+	VertexPosNormal vertices[4 * MOEBIUS_N]; //2 sides, N parts per side, 2 vertices per part
+	float t = 0, dt = XM_2PI / MOEBIUS_N;
+	int i = 0;
+	for (; i < 2 * MOEBIUS_N; ++i, t += dt)
 	{
-		t += dt;
 		vertices[2 * i].Pos = MoebiusStripPos(t, -1);
 		XMVECTOR normal = XMVector3Normalize(XMVector3Cross(MoebiusStripDs(t, -1), MoebiusStripDt(t, -1)));
-		XMStoreFloat3(&vertices[2 * i].Normal, normal);
-
+		XMStoreFloat3(&vertices[2 * i].Normal, normal);
 		vertices[2 * i + 1].Pos = MoebiusStripPos(t, 1);
 		normal = XMVector3Normalize(XMVector3Cross(MoebiusStripDs(t, 1), MoebiusStripDt(t, 1)));
 		XMStoreFloat3(&vertices[2 * i + 1].Normal, normal);
-	}
-
+	}
 	m_vbMoebius = m_device.CreateVertexBuffer(vertices, 4 * MOEBIUS_N);
-	unsigned short indices[12 * MOEBIUS_N];
-
-
-	for (int i = 0; i < 2 * MOEBIUS_N - 1; ++i)
+	unsigned short indices[12 * MOEBIUS_N]; //2 sides, N parts per side, 2 triangles per part, 3 veritces per triangle
+	i = 0;
+	for (; i < 2 * MOEBIUS_N - 1; ++i)
 	{
-		indices[6 * i] = 2 * i; 
-		indices[6 * i + 1] = 2 * i + 1; 
-		indices[6 * i + 2] = 2 * i + 3;
-		indices[6 * i + 3] = 2 * i; 
-		indices[6 * i + 4] = 2 * i + 3; 
-		indices[6 * i + 5] = 2 * i + 2;
-	}
-
-	// End with begining
-	indices[6 * i] = 2 * i; 
-	indices[6 * i + 1] = 2 * i + 1; 
-	indices[6 * i + 2] = 1;
-	indices[6 * i + 3] = 2 * i; 
-	indices[6 * i + 4] = 1; 
-	indices[6 * i + 5] = 0;
-
+		indices[6 * i] = 2 * i; indices[6 * i + 1] = 2 * i + 1; indices[6 * i + 2] = 2 * i + 3;
+		indices[6 * i + 3] = 2 * i; indices[6 * i + 4] = 2 * i + 3; indices[6 * i + 5] = 2 * i + 2;
+	}
+	indices[6 * i] = 2 * i; indices[6 * i + 1] = 2 * i + 1; indices[6 * i + 2] = 1;
+	indices[6 * i + 3] = 2 * i; indices[6 * i + 4] = 1; indices[6 * i + 5] = 0;
 	m_ibMoebius = m_device.CreateIndexBuffer(indices, 12 * MOEBIUS_N);
 }
 
@@ -514,8 +499,7 @@ void Butterfly::DrawButterfly()
 //Draw the butterfly
 {
 	const XMMATRIX worldMtx = XMMatrixIdentity();
-	m_context->UpdateSubresource(m_cbWorld.get(), 0, 0, &worldMtx, 0, 0);
-
+	m_context->UpdateSubresource(m_cbWorld.get(), 0, 0, &worldMtx, 0, 0);
 	ID3D11Buffer* b = m_vbMoebius.get();
 	m_context->IASetVertexBuffers(0, 1, &b, &VB_STRIDE, &VB_OFFSET);
 	m_context->IASetIndexBuffer(m_ibMoebius.get(), DXGI_FORMAT_R16_UINT, 0);
