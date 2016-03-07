@@ -31,6 +31,7 @@ const unsigned int Butterfly::BS_MASK = 0xffffffff;
 
 const XMFLOAT4 Butterfly::GREEN_LIGHT_POS = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 const XMFLOAT4 Butterfly::BLUE_LIGHT_POS = XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f);
+
 const XMFLOAT4 Butterfly::COLORS[] = 
 	{ 
 		XMFLOAT4(253.0f/255.0f, 198.0f/255.0f, 137.0f/255.0f, 100.0f/255.0f),
@@ -47,6 +48,24 @@ const XMFLOAT4 Butterfly::COLORS[] =
 		XMFLOAT4(244.0f/255.0f, 154.0f/255.0f, 193.0f/255.0f, 100.0f/255.0f)
 	};
 
+/*
+float alpha = 0.0;
+const XMFLOAT4 Butterfly::COLORS[] =
+{
+	XMFLOAT4(253.0f / 255.0f, 198.0f / 255.0f, 137.0f / 255.0f, alpha),
+	XMFLOAT4(255.0f / 255.0f, 247.0f / 255.0f, 153.0f / 255.0f, alpha),
+	XMFLOAT4(196.0f / 255.0f, 223.0f / 255.0f, 155.0f / 255.0f, alpha),
+	XMFLOAT4(162.0f / 255.0f, 211.0f / 255.0f, 156.0f / 255.0f, alpha),
+	XMFLOAT4(130.0f / 255.0f, 202.0f / 255.0f, 156.0f / 255.0f, alpha),
+	XMFLOAT4(122.0f / 255.0f, 204.0f / 255.0f, 200.0f / 255.0f, alpha),
+	XMFLOAT4(109.0f / 255.0f, 207.0f / 255.0f, 246.0f / 255.0f, alpha),
+	XMFLOAT4(125.0f / 255.0f, 167.0f / 255.0f, 216.0f / 255.0f, alpha),
+	XMFLOAT4(131.0f / 255.0f, 147.0f / 255.0f, 202.0f / 255.0f, alpha),
+	XMFLOAT4(135.0f / 255.0f, 129.0f / 255.0f, 189.0f / 255.0f, alpha),
+	XMFLOAT4(161.0f / 255.0f, 134.0f / 255.0f, 190.0f / 255.0f, alpha),
+	XMFLOAT4(244.0f / 255.0f, 154.0f / 255.0f, 193.0f / 255.0f, alpha)
+};
+*/
 void* Butterfly::operator new(size_t size)
 {
 	return Utils::New16Aligned(size);
@@ -144,7 +163,19 @@ void Butterfly::InitializeRenderStates()
 
 	D3D11_BLEND_DESC bsDesc = m_device.DefaultBlendDesc();
 	//Setup alpha blending
+	
+	bsDesc.RenderTarget[0].BlendEnable = true;
+	bsDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	bsDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	bsDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	bsDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	bsDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	bsDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	bsDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
 	m_bsAlpha = m_device.CreateBlendState(bsDesc);
+
+	m_context->OMSetBlendState(m_bsAlpha.get(), 0, 0xffffffff);
 }
 
 void Butterfly::InitializeCamera()
@@ -475,6 +506,7 @@ void Butterfly::Update(float dt)
 	if (!m_mouse->GetState(currentState))
 		return;
 	auto change = true;
+
 	if (prevState.isButtonDown(0))
 	{
 		auto d = currentState.getMousePositionChange();
@@ -511,6 +543,9 @@ void Butterfly::DrawDodecahedron(bool colors) const
 	m_context->IASetIndexBuffer(m_ibPentagon.get(), DXGI_FORMAT_R16_UINT, 0);
 	for (auto i = 0; i < 12; ++i)
 	{
+		if (colors) {
+			SetSurfaceColor(COLORS[i]);
+		}
 		m_context->UpdateSubresource(m_cbWorld.get(), 0, nullptr, &m_dodecahedronMtx[i], 0, 0);
 		m_context->DrawIndexed(9, 0, 0);
 	}
@@ -567,7 +602,7 @@ void Butterfly::DrawMirroredWorld(int i)
 
 	//Draw objects
 	DrawBox();
-	DrawDodecahedron(true);
+	DrawDodecahedron(false);
 	DrawMoebiusStrip();
 
 	//Restore Camera to its original values
@@ -596,10 +631,12 @@ void Butterfly::Render()
 	for (int i = 0; i < 12; ++i)
 		DrawMirroredWorld(i);
 
+	
 	//render dodecahedron with one light and alpha blending
 	m_context->OMSetBlendState(m_bsAlpha.get(), nullptr, BS_MASK);
 	SetLight0();
-	//DrawDodecahedron(true);
+	DrawDodecahedron(true);
+
 	m_context->OMSetBlendState(nullptr, nullptr, BS_MASK);
 
 	//render the rest of the scene with all lights
