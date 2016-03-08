@@ -48,24 +48,6 @@ const XMFLOAT4 Butterfly::COLORS[] =
 		XMFLOAT4(244.0f/255.0f, 154.0f/255.0f, 193.0f/255.0f, 100.0f/255.0f)
 	};
 
-/*
-float alpha = 0.0;
-const XMFLOAT4 Butterfly::COLORS[] =
-{
-	XMFLOAT4(253.0f / 255.0f, 198.0f / 255.0f, 137.0f / 255.0f, alpha),
-	XMFLOAT4(255.0f / 255.0f, 247.0f / 255.0f, 153.0f / 255.0f, alpha),
-	XMFLOAT4(196.0f / 255.0f, 223.0f / 255.0f, 155.0f / 255.0f, alpha),
-	XMFLOAT4(162.0f / 255.0f, 211.0f / 255.0f, 156.0f / 255.0f, alpha),
-	XMFLOAT4(130.0f / 255.0f, 202.0f / 255.0f, 156.0f / 255.0f, alpha),
-	XMFLOAT4(122.0f / 255.0f, 204.0f / 255.0f, 200.0f / 255.0f, alpha),
-	XMFLOAT4(109.0f / 255.0f, 207.0f / 255.0f, 246.0f / 255.0f, alpha),
-	XMFLOAT4(125.0f / 255.0f, 167.0f / 255.0f, 216.0f / 255.0f, alpha),
-	XMFLOAT4(131.0f / 255.0f, 147.0f / 255.0f, 202.0f / 255.0f, alpha),
-	XMFLOAT4(135.0f / 255.0f, 129.0f / 255.0f, 189.0f / 255.0f, alpha),
-	XMFLOAT4(161.0f / 255.0f, 134.0f / 255.0f, 190.0f / 255.0f, alpha),
-	XMFLOAT4(244.0f / 255.0f, 154.0f / 255.0f, 193.0f / 255.0f, alpha)
-};
-*/
 void* Butterfly::operator new(size_t size)
 {
 	return Utils::New16Aligned(size);
@@ -344,6 +326,30 @@ void Butterfly::InitializeButterfly()
 //Create vertex and index buffers for the butterfly wing
 {
 	//TODO: write code here
+	
+	VertexPosNormal vertices[] =
+	{
+		{ XMFLOAT3(-1, 1, 0),	XMFLOAT3(0.0f, 0.0f, 1.0f) },
+		{ XMFLOAT3(1, 1, 0),	XMFLOAT3(0.0f, 0.0f, 1.0f) },
+		{ XMFLOAT3(1, -1, 0),	XMFLOAT3(0.0f, 0.0f, 1.0f) },
+		{ XMFLOAT3(-1, -1, 0),	XMFLOAT3(0.0f, 0.0f, 1.0f) },
+		// DUPLICATE
+		{ XMFLOAT3(-1, 1, 0),	XMFLOAT3(0.0f, 0.0f, -1.0f) },
+		{ XMFLOAT3(1, 1, 0),	XMFLOAT3(0.0f, 0.0f, -1.0f) },
+		{ XMFLOAT3(1, -1, 0),	XMFLOAT3(0.0f, 0.0f, -1.0f) },
+		{ XMFLOAT3(-1, -1, 0),	XMFLOAT3(0.0f, 0.0f, -1.0f) }
+	};
+	
+	m_vbWing = m_device.CreateVertexBuffer(vertices, 8);
+	unsigned short indices[] =
+	{
+		0,1,2,
+		0,2,3,
+		5,4,7,
+		6,5,7
+	};
+	m_ibWing = m_device.CreateIndexBuffer(indices, 12);
+	
 }
 
 void Butterfly::InitializeBilboards()
@@ -455,6 +461,27 @@ void Butterfly::UpdateButterfly(float dtime)
 		a = 2 * WING_MAX_A - a;
 
 	//TODO: write the rest of code here
+
+	
+	XMFLOAT3 p_tmp = MoebiusStripPos(t, 0);
+	XMVECTOR p = XMLoadFloat3(&p_tmp);
+	XMVECTOR ps = MoebiusStripDs(t, 0);
+	XMVECTOR pt = MoebiusStripDt(t, 0);
+	XMVECTOR pn = XMVector3Normalize(XMVector3Cross(pt, ps));
+	XMMATRIX B;
+	B.r[0] = pt;
+	B.r[1] = pn;
+	B.r[2] = ps;
+	B.r[3] = p;
+	B.r[3].m128_f32[3] = 1;
+
+	for (int i = 0; i < 2; i++) {
+		m_wingMtx[i] = XMMatrixTranslation(0, 1, 0) *
+			XMMatrixScaling(WING_W / 2, WING_H / 2, 1) *
+			XMMatrixRotationX(pow(-1,i) * a) * B;
+	}
+	
+
 }
 
 void Butterfly::SetLight0() const
@@ -489,6 +516,8 @@ void Butterfly::SetLight1() const
 	colors[0] = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f); //ambient color
 	colors[1] = XMFLOAT4(1.0f, 0.8f, 1.0f, 200.0f); //surface [ka, kd, ks, m]
 	colors[2] = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f); //white light color
+	colors[3] = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
+	colors[4] = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
 	//TODO: write the rest of code here
 	m_context->UpdateSubresource(m_cbLightColors.get(), 0, nullptr, colors, 0, 0);
 }
@@ -566,7 +595,15 @@ void Butterfly::DrawMoebiusStrip() const
 void Butterfly::DrawButterfly() const
 //Draw the butterfly
 {
-	//TODO: write code here
+	for (int i = 0;i < 2; i++) {
+		const auto worldMtx = m_wingMtx[i];
+		m_context->UpdateSubresource(m_cbWorld.get(), 0, nullptr, &worldMtx, 0, 0);
+
+		auto b = m_vbWing.get();
+		m_context->IASetVertexBuffers(0, 1, &b, &VB_STRIDE, &VB_OFFSET);
+		m_context->IASetIndexBuffer(m_ibWing.get(), DXGI_FORMAT_R16_UINT, 0);
+		m_context->DrawIndexed(12, 0, 0);
+	}
 }
 
 void Butterfly::DrawBilboards() const
@@ -601,9 +638,10 @@ void Butterfly::DrawMirroredWorld(int i)
 	m_context->RSSetState(m_rsCounterClockwise.get());
 
 	//Draw objects
-	DrawBox();
+	//DrawBox();
 	DrawDodecahedron(false);
 	DrawMoebiusStrip();
+	DrawButterfly();
 
 	//Restore Camera to its original values
 	UpdateCamera(m_camera.GetViewMatrix());
@@ -625,7 +663,7 @@ void Butterfly::Render()
 	//Render box with all three lights
 	SetLight1();
 	SetSurfaceColor(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
-	DrawBox();
+	//DrawBox();
 
 	//render mirrored worlds
 	for (int i = 0; i < 12; ++i)
