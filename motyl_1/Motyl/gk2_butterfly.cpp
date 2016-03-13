@@ -356,6 +356,21 @@ void Butterfly::InitializeBilboards()
 //Initialize bilboard resources (vertex, pixel shaders, input layout, vertex, index buffers etc.)
 {
 	//TODO: write code here
+	VertexPos vertices[] =
+	{
+		{ XMFLOAT3(-1,	1,	0)},
+		{ XMFLOAT3(1,	1,	0)},
+		{ XMFLOAT3(1,	-1, 0)},
+		{ XMFLOAT3(-1,	-1, 0)}
+	};
+	m_vbBilboard = m_device.CreateVertexBuffer(vertices, 4);
+	unsigned short indices[] = { 0, 1, 2, 0, 2, 3 };
+	m_ibBilboard = m_device.CreateIndexBuffer(indices, 6);
+
+	
+	m_vsBilboard;
+	m_psBilboard;
+
 }
 
 void Butterfly::SetShaders() const
@@ -516,8 +531,8 @@ void Butterfly::SetLight1() const
 	colors[0] = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f); //ambient color
 	colors[1] = XMFLOAT4(1.0f, 0.8f, 1.0f, 200.0f); //surface [ka, kd, ks, m]
 	colors[2] = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f); //white light color
-	colors[3] = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
-	colors[4] = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
+	colors[3] = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f); // Green light
+	colors[4] = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f); // Blue light
 	//TODO: write the rest of code here
 	m_context->UpdateSubresource(m_cbLightColors.get(), 0, nullptr, colors, 0, 0);
 }
@@ -611,7 +626,19 @@ void Butterfly::DrawBilboards() const
 {
 	SetBilboardShaders();
 
+	const auto worldMtx = XMMatrixTranslation(GREEN_LIGHT_POS.x, GREEN_LIGHT_POS.y, GREEN_LIGHT_POS.z);
+	m_context->UpdateSubresource(m_cbWorld.get(), 0, nullptr, &worldMtx, 0, 0);
+
+	auto b = m_vbBilboard.get();
+	m_context->IASetVertexBuffers(0, 1, &b, &VB_STRIDE, &VB_OFFSET);
+	m_context->IASetIndexBuffer(m_ibBilboard.get(), DXGI_FORMAT_R16_UINT, 0);
+	m_context->DrawIndexed(6, 0, 0);
+
+	const int BILBOARD_COUNT = 0;
 	//TODO: write code here
+	for (int i = 0; i < BILBOARD_COUNT; i++) {
+
+	}
 
 	SetShaders();
 }
@@ -642,6 +669,7 @@ void Butterfly::DrawMirroredWorld(int i)
 	DrawDodecahedron(false);
 	DrawMoebiusStrip();
 	DrawButterfly();
+	DrawBilboards();
 
 	//Restore Camera to its original values
 	UpdateCamera(m_camera.GetViewMatrix());
