@@ -32,6 +32,9 @@ const unsigned int Butterfly::BS_MASK = 0xffffffff;
 const XMFLOAT4 Butterfly::GREEN_LIGHT_POS = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 const XMFLOAT4 Butterfly::BLUE_LIGHT_POS = XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f);
 
+const XMFLOAT4 Butterfly::GREEN_COLOR = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
+const XMFLOAT4 Butterfly::BLUE_COLOR = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
+
 const XMFLOAT4 Butterfly::COLORS[] = 
 	{ 
 		XMFLOAT4(253.0f/255.0f, 198.0f/255.0f, 137.0f/255.0f, 100.0f/255.0f),
@@ -144,8 +147,8 @@ void Butterfly::InitializeRenderStates()
 	m_rsCounterClockwise = m_device.CreateRasterizerState(rsDesc);
 
 	D3D11_BLEND_DESC bsDesc = m_device.DefaultBlendDesc();
-	//Setup alpha blending
 	
+	//Setup alpha blending
 	bsDesc.RenderTarget[0].BlendEnable = true;
 	bsDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
 	bsDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
@@ -153,11 +156,26 @@ void Butterfly::InitializeRenderStates()
 	bsDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
 	bsDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
 	bsDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-	bsDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	//bsDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
 	m_bsAlpha = m_device.CreateBlendState(bsDesc);
 
-	m_context->OMSetBlendState(m_bsAlpha.get(), 0, 0xffffffff);
+	// Resest Just In Case
+	//bsDesc = m_device.DefaultBlendDesc();
+	/*
+	bsDesc.RenderTarget[0].BlendEnable = true;
+	bsDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+	bsDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+	bsDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	bsDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	bsDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+	bsDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	bsDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	*/
+	bsDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_COLOR;
+	bsDesc.RenderTarget[0].DestBlend = D3D11_BLEND_DEST_COLOR;
+	bsDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	m_bsAdd = m_device.CreateBlendState(bsDesc);
 }
 
 void Butterfly::InitializeCamera()
@@ -172,6 +190,7 @@ void Butterfly::InitializeCamera()
 
 void Butterfly::InitializeBox()
 {
+
 	VertexPosNormal vertices[] =
 	{
 		//Front face
@@ -210,6 +229,7 @@ void Butterfly::InitializeBox()
 		{ XMFLOAT3(0.5f, 0.5f, 0.5f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
 		{ XMFLOAT3(-0.5f, 0.5f, 0.5f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
 	};
+	
 	m_vbBox = m_device.CreateVertexBuffer(vertices, 24);
 	unsigned short indices[] =
 	{
@@ -355,22 +375,43 @@ void Butterfly::InitializeButterfly()
 void Butterfly::InitializeBilboards()
 //Initialize bilboard resources (vertex, pixel shaders, input layout, vertex, index buffers etc.)
 {
-	//TODO: write code here
+	/*
 	VertexPos vertices[] =
 	{
-		{ XMFLOAT3(-1,	1,	0)},
-		{ XMFLOAT3(1,	1,	0)},
-		{ XMFLOAT3(1,	-1, 0)},
-		{ XMFLOAT3(-1,	-1, 0)}
-	};
+		{ XMFLOAT3(-0.5f, -0.5f, -0.5f)},
+		{ XMFLOAT3(0.5f, -0.5f, -0.5f)},
+		{ XMFLOAT3(0.5f, 0.5f, -0.5f)},
+		{ XMFLOAT3(-0.5f, 0.5f, -0.5f)}
+	};
+
 	m_vbBilboard = m_device.CreateVertexBuffer(vertices, 4);
+	//unsigned short indices[] = { 0, 1, 2, 0, 2, 3 };
 	unsigned short indices[] = { 0, 1, 2, 0, 2, 3 };
+
 	m_ibBilboard = m_device.CreateIndexBuffer(indices, 6);
-
+	*/
 	
-	m_vsBilboard;
-	m_psBilboard;
+	VertexPosNormal vertices[] =
+	{
+		//Front face
+		{ XMFLOAT3(-0.5f, -0.5f, -0.5f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
+		{ XMFLOAT3(0.5f, -0.5f, -0.5f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
+		{ XMFLOAT3(0.5f, 0.5f, -0.5f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
+		{ XMFLOAT3(-0.5f, 0.5f, -0.5f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
 
+		{ XMFLOAT3(-0.5f, -0.5f, -0.5f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+		{ XMFLOAT3(0.5f, -0.5f, -0.5f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+		{ XMFLOAT3(0.5f, 0.5f, -0.5f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+		{ XMFLOAT3(-0.5f, 0.5f, -0.5f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+	};
+
+	m_vbBilboard = m_device.CreateVertexBuffer(vertices, 8);
+	unsigned short indices[] =
+	{
+		0, 1, 2, 0, 2, 3,
+		5, 4, 7, 6, 5, 7
+	};
+	m_ibBilboard = m_device.CreateIndexBuffer(indices, 12);
 }
 
 void Butterfly::SetShaders() const
@@ -531,8 +572,8 @@ void Butterfly::SetLight1() const
 	colors[0] = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f); //ambient color
 	colors[1] = XMFLOAT4(1.0f, 0.8f, 1.0f, 200.0f); //surface [ka, kd, ks, m]
 	colors[2] = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f); //white light color
-	colors[3] = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f); // Green light
-	colors[4] = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f); // Blue light
+	colors[3] = GREEN_COLOR;
+	colors[4] = BLUE_COLOR;
 	//TODO: write the rest of code here
 	m_context->UpdateSubresource(m_cbLightColors.get(), 0, nullptr, colors, 0, 0);
 }
@@ -624,10 +665,20 @@ void Butterfly::DrawButterfly() const
 void Butterfly::DrawBilboards() const
 //Setup bilboards rendering and draw them
 {
+	/*
 	SetBilboardShaders();
-
-	const auto worldMtx = XMMatrixTranslation(GREEN_LIGHT_POS.x, GREEN_LIGHT_POS.y, GREEN_LIGHT_POS.z);
+	m_context->OMSetBlendState(m_bsAdd.get(), nullptr, BS_MASK);
+	SetSurfaceColor(GREEN_COLOR);
+	
+	const auto worldMtx = XMMatrixTranslation(GREEN_LIGHT_POS.x, 
+												GREEN_LIGHT_POS.y, 
+												GREEN_LIGHT_POS.z);
 	m_context->UpdateSubresource(m_cbWorld.get(), 0, nullptr, &worldMtx, 0, 0);
+	
+	// set surface color DONE
+	// init blending additive in InitRenderState DONE - MAYBE WRONG
+	// Set blending additive - DONE
+	// Set blending additive null - DONE
 
 	auto b = m_vbBilboard.get();
 	m_context->IASetVertexBuffers(0, 1, &b, &VB_STRIDE, &VB_OFFSET);
@@ -637,9 +688,56 @@ void Butterfly::DrawBilboards() const
 	const int BILBOARD_COUNT = 0;
 	//TODO: write code here
 	for (int i = 0; i < BILBOARD_COUNT; i++) {
-
+		
 	}
 
+	m_context->OMSetBlendState(nullptr, nullptr, BS_MASK);
+	SetShaders();
+	*/
+
+	//-------------------
+	// INIT BOTH
+	//-------------------
+
+	SetBilboardShaders();
+	m_context->OMSetBlendState(m_bsAdd.get(), nullptr, BS_MASK);
+
+	//-------------------
+	// DRAW GREEN
+	//-------------------
+	
+	SetSurfaceColor(GREEN_COLOR);
+	const auto worldMtxGreen = XMMatrixTranslation(
+		GREEN_LIGHT_POS.x,
+		GREEN_LIGHT_POS.y,
+		GREEN_LIGHT_POS.z);
+	m_context->UpdateSubresource(m_cbWorld.get(), 0, nullptr, &worldMtxGreen, 0, 0);
+
+	auto b = m_vbBilboard.get();
+	m_context->IASetVertexBuffers(0, 1, &b, &VB_STRIDE, &VB_OFFSET);
+	m_context->IASetIndexBuffer(m_ibBilboard.get(), DXGI_FORMAT_R16_UINT, 0);
+	m_context->DrawIndexed(12, 0, 0);
+
+	//-------------------
+	// DRAW BLUE
+	//-------------------
+
+	SetSurfaceColor(BLUE_COLOR);
+	const auto worldMtxBlue = XMMatrixTranslation(
+		BLUE_LIGHT_POS.x,
+		BLUE_LIGHT_POS.y,
+		BLUE_LIGHT_POS.z);
+	m_context->UpdateSubresource(m_cbWorld.get(), 0, nullptr, &worldMtxBlue, 0, 0);
+
+	m_context->IASetVertexBuffers(0, 1, &b, &VB_STRIDE, &VB_OFFSET);
+	m_context->IASetIndexBuffer(m_ibBilboard.get(), DXGI_FORMAT_R16_UINT, 0);
+	m_context->DrawIndexed(12, 0, 0);
+
+	//-------------------
+	// FINISH
+	//-------------------
+
+	m_context->OMSetBlendState(nullptr, nullptr, BS_MASK);
 	SetShaders();
 }
 
@@ -666,10 +764,14 @@ void Butterfly::DrawMirroredWorld(int i)
 
 	//Draw objects
 	//DrawBox();
+
+	SetLight0();
 	DrawDodecahedron(false);
+	
+	SetLight1();
 	DrawMoebiusStrip();
 	DrawButterfly();
-	DrawBilboards();
+	//DrawBilboards();
 
 	//Restore Camera to its original values
 	UpdateCamera(m_camera.GetViewMatrix());
@@ -696,13 +798,11 @@ void Butterfly::Render()
 	//render mirrored worlds
 	for (int i = 0; i < 12; ++i)
 		DrawMirroredWorld(i);
-
 	
 	//render dodecahedron with one light and alpha blending
 	m_context->OMSetBlendState(m_bsAlpha.get(), nullptr, BS_MASK);
 	SetLight0();
 	DrawDodecahedron(true);
-
 	m_context->OMSetBlendState(nullptr, nullptr, BS_MASK);
 
 	//render the rest of the scene with all lights

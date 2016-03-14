@@ -64,6 +64,10 @@ namespace gk2
 		static const DirectX::XMFLOAT4 GREEN_LIGHT_POS;
 		static const DirectX::XMFLOAT4 BLUE_LIGHT_POS;
 
+		// Static light color
+		static const DirectX::XMFLOAT4 GREEN_COLOR;
+		static const DirectX::XMFLOAT4 BLUE_COLOR;
+
 		//Projection matrix
 		DirectX::XMMATRIX m_projMtx;
 		//Pentagon -> Dodecahedron's i-th face
