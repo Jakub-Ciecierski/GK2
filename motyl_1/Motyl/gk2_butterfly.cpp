@@ -707,7 +707,7 @@ void Butterfly::DrawBilboards() const
 	//-------------------
 	
 	SetSurfaceColor(GREEN_COLOR);
-	const auto worldMtxGreen = XMMatrixTranslation(
+	const auto worldMtxGreen = XMMatrixScaling(0.5, 0.5, 0.5) * XMMatrixTranslation(
 		GREEN_LIGHT_POS.x,
 		GREEN_LIGHT_POS.y,
 		GREEN_LIGHT_POS.z);
@@ -723,7 +723,7 @@ void Butterfly::DrawBilboards() const
 	//-------------------
 
 	SetSurfaceColor(BLUE_COLOR);
-	const auto worldMtxBlue = XMMatrixTranslation(
+	const auto worldMtxBlue = XMMatrixScaling(0.5, 0.5, 0.5) * XMMatrixTranslation(
 		BLUE_LIGHT_POS.x,
 		BLUE_LIGHT_POS.y,
 		BLUE_LIGHT_POS.z);
@@ -737,6 +737,8 @@ void Butterfly::DrawBilboards() const
 	// FINISH
 	//-------------------
 
+	// Set white back
+	SetSurfaceColor(XMFLOAT4(1.0, 1.0, 1.0, 1.0));
 	m_context->OMSetBlendState(nullptr, nullptr, BS_MASK);
 	SetShaders();
 }
@@ -771,7 +773,7 @@ void Butterfly::DrawMirroredWorld(int i)
 	SetLight1();
 	DrawMoebiusStrip();
 	DrawButterfly();
-	//DrawBilboards();
+	DrawBilboards();
 
 	//Restore Camera to its original values
 	UpdateCamera(m_camera.GetViewMatrix());
