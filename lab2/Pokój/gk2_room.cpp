@@ -72,8 +72,10 @@ void Room::InitializeTextures()
 	sd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
 	m_samplerWrap = m_device.CreateSamplerState(sd);
 	
-	//TODO: Initialize back wall sampler state
-
+	//TODO: Initialize back wall sampler state DONE
+	sd.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+	sd.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+	sd.MipLODBias = 1.0f;
 	m_samplerBorder = m_device.CreateSamplerState(sd);
 	m_perlinTexture = m_device.CreateShaderResourceView(L"resources/textures/perlin.jpg");
 
@@ -157,7 +159,11 @@ void Room::CreateScene()
 	m_textureCB->Update(m_context, XMMatrixScaling(0.25f, 0.25f, 1.0f) * XMMatrixTranslation(0.5f, 0.5f, 0.0f));
 	
 	//TODO: replace following with correct value
-	m_posterTexCB->Update(m_context, XMMatrixIdentity());
+
+	float width = 4.0f;
+	XMMATRIX posterMatrix = XMMatrixTranslation(0.2*width, 0, 0) * XMMatrixRotationZ(-XM_PI / 18)
+		* XMMatrixScaling(4 / width, -3 / width, 1) * XMMatrixTranslation(0.5, 0.5, 0);
+	m_posterTexCB->Update(m_context, posterMatrix);
 }
 
 void Room::InitializeRenderStates()
