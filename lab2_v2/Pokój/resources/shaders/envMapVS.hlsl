@@ -37,7 +37,7 @@ PSInput main(VSInput i)
 	o.pos = mul(worldMatrix, o.pos);
 	float4 newNorm = float4(i.norm, 0.0f);
 	//TODO: calculate texture coordinate
-	o.tex = reflect(normalize(cameraPos - o.pos), normalize(mul(worldMatrix, newNorm)));
+	o.tex = reflect(normalize(cameraPos - i.pos), normalize(mul(worldMatrix, newNorm)));
 
 	o.pos = mul(viewMatrix, o.pos);
 	o.pos = mul(projMatrix, o.pos);
