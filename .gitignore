@@ -1,4 +1,4 @@
-/motyl/Debug/*.exe
+﻿/motyl/Debug/*.exe
 Debug/
 /motyl/*.sdf
 
@@ -9,3 +9,4 @@ Debug/
 /lab2/Pokój.VC.opendb
 /lab2/.vs/Pokój/v14/*.suo
 /lab2_v2/*.sdf
+*.sdf
